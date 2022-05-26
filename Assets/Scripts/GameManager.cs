@@ -7,15 +7,23 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
+    public float planeRadius = 20f;
+    public Transform planeCenter;
+    public Transform UiPanel;
+    // We store all obstacles
+    public List<GameObject> obstacles;
+    // A string to identify objects tagged as obstacles
+    const string ObstacleTag = "Obstacle";
+
     // This is the single instance of the class
     private static GameManager instance = null;
 
     // Keep track of all the players
-    private const int numGreenPlayers = 6;
-    private List<GreenPlayer> greenPlayers = new List<GreenPlayer>(numGreenPlayers);
+    private const int numGreenPlayers = 5;
+    private List<Player> greenPlayers = new List<Player>(numGreenPlayers);
 
-    private const int numPurplePlayers = 3;
-    private List<PurplePlayer> purplePlayers = new List<PurplePlayer>(numPurplePlayers);
+    private const int numPurplePlayers = 2;
+    private List<Player> purplePlayers = new List<Player>(numPurplePlayers);
 
     private bool purpleTeamHasWon = false;
 
@@ -42,22 +50,23 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < numGreenPlayers; i++)
         {
             GreenPlayer gp = Instantiate(greenPlayerPrefab).GetComponent<GreenPlayer>();
-            gp.OpponnentCaptured += gp.TransportToGaol;
             greenPlayers.Add(gp);
         }
 
         for (int i = 0; i < numPurplePlayers; i++)
         {
             purplePlayers.Add(Instantiate(purplePlayerPrefab).GetComponent<PurplePlayer>());
-
         }
+
+        // Find the obstacles
+        obstacles = new List<GameObject>(GameObject.FindGameObjectsWithTag(ObstacleTag));
 
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        if (CheckPurpleTeamWinningCondition()) UiPanel.gameObject.SetActive(true);
     }
 
     public void RemoveGreenPlayerFromList(GreenPlayer player)
@@ -70,29 +79,21 @@ public class GameManager : MonoBehaviour
     {
         GreenPlayer target = null;
         float closestDistance = float.MaxValue;
-
-        if (greenPlayers.Count == 0)
-        {
-            print("Purple team has won");
-            purpleTeamHasWon = true;
-        }
-
         foreach (GreenPlayer greenPlayer in greenPlayers)
         {
-            float distance = Vector2.Distance(greenPlayer.Position(), player.Position());
-            if (distance < closestDistance)
+            float distance = Vector2.Distance(greenPlayer.position, player.position);
+            if (distance < closestDistance && greenPlayer.isIdle)
             {
                 closestDistance = distance;
                 target = greenPlayer;
             }
         }
-
         return target;
     }
 
     public bool CheckPurpleTeamWinningCondition()
     {
-        return purpleTeamHasWon;
+        return greenPlayers.Count == 0;
     }
 
     // Find the nearest purple player to a given green player
@@ -104,7 +105,7 @@ public class GameManager : MonoBehaviour
 
         foreach (PurplePlayer purplePlayer in purplePlayers)
         {
-            float distance = Vector2.Distance(purplePlayer.Position(), player.Position());
+            float distance = Vector2.Distance(purplePlayer.position, player.position);
             if (distance < closestDistance)
             {
                 closestDistance = distance;
@@ -124,5 +125,14 @@ public class GameManager : MonoBehaviour
     public static GameManager Instance()
     {
         return instance;
+    }
+    public List<Player> GreenPlayers()
+    {
+        return greenPlayers;
+    }
+
+    public List<Player> PurplePlayers()
+    {
+        return purplePlayers;
     }
 }
